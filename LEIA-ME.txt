@@ -1,0 +1,1 @@
+CineLista v10 GitHub Pages. Envie index.html, icon.svg, manifest.webmanifest e sw.js para a raiz do repositório. Fotos são armazenadas localmente. Identificação do filme apenas pelo conteúdo da foto não está disponível sem um serviço externo.
