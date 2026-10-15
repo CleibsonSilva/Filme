@@ -128,6 +128,34 @@ async function wikipediaTitleSearch(title,type){
  try{const r=await fetch('https://pt.wikipedia.org/w/api.php?'+q);if(!r.ok)return [];const j=await r.json();return Object.values(j.query?.pages||{}).filter(x=>{const d=(x.extract||'').slice(0,700);if(/desambiguação|lista de/i.test(x.title))return false;return type==='Filme'?/\b(filme|longa.metragem|cinematográfic[oa])\b/i.test(d):/\b(série|seriado|telessérie|minissérie|programa de televisão|produção televisiva)\b/i.test(d)}).map(x=>({name:x.title.replace(/\s*\((filme(?: de \d{4})?|série de televisão|série|série de TV|série televisiva)\)$/i,''),year:(x.extract||'').match(/\b(?:19|20)\d{2}\b/)?.[0]||'',genres:metadataGenres((x.extract||'').match(/(?:ação|aventura|animação|comédia|crime|documentário|drama|fantasia|ficção científica|mistério|romance|suspense|terror|guerra|faroeste)/gi)||[]),poster:x.thumbnail?.source||'',type,source:'Wikipédia PT'}))}catch{return []}
 }
 function metadataGenres(values){return (values||[]).flatMap(g=>String(g).split(/[,/]/)).map(g=>genreMap[g.trim()]||GENRES.find(x=>x.toLocaleLowerCase('pt-BR')===g.trim().toLocaleLowerCase('pt-BR'))||g.trim()).filter(g=>GENRES.includes(g))}
+// Wikidata: busca por nomes em português/inglês e verifica o tipo da obra antes de sugerir.
+async function wikidataTitleSearch(title,type){
+ const ids=new Set(),labels=new Map();
+ for(const lang of ['pt','en']){
+  try{const q=new URLSearchParams({action:'wbsearchentities',search:title,language:lang,uselang:'pt',type:'item',limit:'18',format:'json',origin:'*'});
+   const r=await fetch('https://www.wikidata.org/w/api.php?'+q);if(!r.ok)continue;
+   for(const x of (await r.json()).search||[]){ids.add(x.id);labels.set(x.id,x.label||title)}
+  }catch(e){}
+ }
+ if(!ids.size)return [];
+ try{
+  const q=new URLSearchParams({action:'wbgetentities',ids:[...ids].join('|'),props:'claims|labels|sitelinks',languages:'pt|en',format:'json',origin:'*'});
+  const r=await fetch('https://www.wikidata.org/w/api.php?'+q);if(!r.ok)return [];
+  const entities=(await r.json()).entities||{},out=[];
+  const films=new Set(['Q11424','Q24869','Q506240','Q932586','Q229390']);
+  const series=new Set(['Q5398426','Q15416','Q1259759','Q21191270','Q117467246','Q3464665']);
+  for(const x of Object.values(entities)){
+   const classes=(x.claims?.P31||[]).map(c=>c.mainsnak?.datavalue?.value?.id);
+   if(!classes.some(id=>(type==='Filme'?films:series).has(id)))continue;
+   const name=x.labels?.pt?.value||x.labels?.en?.value||labels.get(x.id)||title;
+   const time=x.claims?.P577?.[0]?.mainsnak?.datavalue?.value?.time||'';
+   const year=(time.match(/[+-](\d{4})-/)||[])[1]||'';
+   out.push({name,year,genres:[],poster:'',type,source:'Wikidata',qid:x.id});
+  }
+  return out;
+ }catch(e){return []}
+}
+function filmeFilmsSearchUrl(title){return 'https://filmefilms.com/?s='+encodeURIComponent(title)}
 async function lookupMetadata(){
  const title=document.getElementById('movieName')?.value.trim(),type=document.getElementById('movieType')?.value;
  if(!title)return toast('Digite o título.');
@@ -135,11 +163,12 @@ async function lookupMetadata(){
  const sources=[];
  if(type==='Série')sources.push(fetch('https://api.tvmaze.com/search/shows?q='+encodeURIComponent(title)).then(r=>r.json()).then(j=>j.slice(0,20).filter(x=>x.show&&x.show.type!=='News'&&x.show.type!=='Talk Show').map(x=>({name:x.show.name,year:(x.show.premiered||'').slice(0,4),genres:metadataGenres(x.show.genres),poster:x.show.image?.original||x.show.image?.medium||'',type,source:'TVmaze'}))));
  else sources.push(fetch('https://itunes.apple.com/search?'+new URLSearchParams({term:title,media:'movie',entity:'movie',country:'br',limit:'50'})).then(r=>r.json()).then(j=>(j.results||[]).filter(x=>x.kind==='feature-movie'||x.wrapperType==='track'&&x.trackKind==='feature-movie').map(x=>({name:x.trackName||x.collectionName,year:(x.releaseDate||'').slice(0,4),genres:metadataGenres([x.primaryGenreName]),poster:(x.artworkUrl100||'').replace(/100x100(?:bb)?/,'600x900bb'),type,source:'Apple Filmes'}))));
+ sources.push(wikidataTitleSearch(title,type));
  sources.push(wikipediaTitleSearch(title,type));
- const settled=await Promise.allSettled(sources);if(document.getElementById('movieName')?.value.trim()!==title||document.getElementById('movieType')?.value!==type)return;const primary=settled[0].status==='fulfilled'?settled[0].value:[];const secondary=settled.slice(1).flatMap(x=>x.status==='fulfilled'?x.value:[]);const results=primary.length?primary.concat(secondary):secondary;
+ const settled=await Promise.allSettled(sources);if(document.getElementById('movieName')?.value.trim()!==title||document.getElementById('movieType')?.value!==type)return;const primary=settled[0].status==='fulfilled'?settled[0].value:[];const secondary=settled.slice(1).flatMap(x=>x.status==='fulfilled'?x.value:[]);const results=primary.concat(secondary);
  const seen=new Set(),needle=normalizeMovieTitle(title);
  const candidates=results.filter(x=>{const n=normalizeMovieTitle(x.name),key=n+'-'+x.year;if(!n||seen.has(key)||(!n.includes(needle)&&!needle.includes(n)&&posterScore(n,needle,'','')<35))return false;seen.add(key);return true}).sort((a,b)=>Number(normalizeMovieTitle(b.name)===needle)-Number(normalizeMovieTitle(a.name)===needle)||Number(b.genres.length>0)-Number(a.genres.length>0)).slice(0,12);
- if(!candidates.length){if(label)label.textContent='Nenhum resultado encontrado. Você pode preencher manualmente.';const box=document.getElementById('titleSuggestions');if(box)box.innerHTML='';return}
+ if(!candidates.length){if(label)label.innerHTML='Nenhum resultado nas fontes principais. <a target="_blank" rel="noopener noreferrer" href="'+esc(filmeFilmsSearchUrl(title))+'">Consultar FilmeFilms (última alternativa)</a>. Confira as permissões antes de usar imagens.';const box=document.getElementById('titleSuggestions');if(box)box.innerHTML='';return}
  window.metadataChoices=candidates;
  const box=document.getElementById('titleSuggestions');
  if(box)box.innerHTML=candidates.map((x,i)=>`<button type="button" class="suggestion-item" onclick="selectMetadata(${i})">${esc(x.name)} ${x.year?'('+esc(x.year)+')':''}</button>`).join('');
