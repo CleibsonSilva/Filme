@@ -11,3 +11,5 @@ Melhorias:
 - Ações de refazer ou excluir a Semana Temática junto de Ocultar assistidos.
 
 Importante: Apple e TVmaze não fornecem um ranking combinado e atual de Netflix, Prime Video, Disney+ e Max. Não rotulamos essas listas como se fossem rankings dessas plataformas.
+
+Versao 26: colecao Marvel com 34 filmes em ordem cronologica da historia (anos de lancamento usados para busca de capas); oferta de criar lista personalizada apos adicionar colecao; atualizacao dos destaques com nova consulta e horario visivel. Mantem armazenamento cinelista_v1. Faça backup antes de publicar.
