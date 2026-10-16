@@ -1,4 +1,1 @@
-CineLista v30 — teste de busca por páginas públicas do Ingresso.com.
-IMPORTANTE: atualize o Cloudflare Worker com o arquivo cinelista_worker_v30.js antes de usar o botão Buscar filme.
-A busca usa slugs prováveis, não indexa todo o catálogo e não adiciona filmes.
-O CineLista continua hospedado no GitHub Pages.
+CineLista v31 — integração experimental com busca Ingresso.com via Worker já publicado.\nPublique os arquivos da raiz no GitHub Pages. Não é necessário atualizar o Worker se a rota /search já funciona.\nA busca por títulos tenta o Ingresso.com como alternativa; ano original prevalece sobre reexibições.\nA extração e a reutilização de imagens dependem da disponibilidade do site e das permissões aplicáveis.\n
