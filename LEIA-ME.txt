@@ -1,5 +1,13 @@
-CineLista v23 — listas personalizadas, avaliação de 5 estrelas, conquistas recolhíveis e aviso, QR para compartilhar aplicativo e apoio Pix R$ 2,00.
+CineLista v25 — Atualização de interface e Semana Temática
 
-Publique todos os arquivos na raiz do repositório GitHub. A chave OMDb configurada localmente permanece no navegador. Faça backup da biblioteca antes de atualizar.
+Atualize os arquivos do repositório GitHub, mantendo o mesmo domínio do PWA.
+Faça backup da biblioteca antes da atualização.
+A chave de armazenamento da biblioteca permanece cinelista_v1.
 
-O QR de compartilhamento do app depende do endereço público continuar ativo e usa serviço externo de geração de imagem.
+Melhorias:
+- Atualizar destaques manualmente; duas fontes identificadas: Apple Brasil (filmes) e TVmaze (séries populares).
+- Corrigido botão de voltar ao topo com rolagem suave.
+- Semana temática: opção de incluir somente títulos não assistidos, ou também os assistidos.
+- Ações de refazer ou excluir a Semana Temática junto de Ocultar assistidos.
+
+Importante: Apple e TVmaze não fornecem um ranking combinado e atual de Netflix, Prime Video, Disney+ e Max. Não rotulamos essas listas como se fossem rankings dessas plataformas.
