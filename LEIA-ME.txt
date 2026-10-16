@@ -1,1 +1,2 @@
 CineLista v27 - teste AdoroCinema, busca alternativa por título original via Wikipédia/Wikidata, séries populares TVmaze consultando várias páginas. Os dados da biblioteca localStorage cinelista_v1 são preservados. Faça backup antes da atualização. O teste AdoroCinema verifica apenas se o navegador consegue ler uma página; não realiza extração automática.\n
+Versão v28: teste isolado da API Ingresso.com em Sugestões > Testar Ingresso.com. Não modifica a biblioteca.

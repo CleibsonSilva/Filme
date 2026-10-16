@@ -120,7 +120,7 @@ const SUGGESTED_COLLECTIONS=[
  {name:'Velozes e Furiosos',emoji:'🏎️',titles:[['Velozes e Furiosos',2001],['+ Velozes + Furiosos',2003],['Velozes e Furiosos: Desafio em Tóquio',2006],['Velozes e Furiosos 4',2009],['Velozes e Furiosos 5: Operação Rio',2011],['Velozes e Furiosos 6',2013],['Velozes e Furiosos 7',2015],['Velozes e Furiosos 8',2017],['Velozes e Furiosos 9',2021],['Velozes e Furiosos 10',2023]]}
 ];
 let chosenCollection=0;
-function openSuggestions(){showModal('✨ Sugestões de coleções',`<p>Explore títulos com capas e gêneros, quando disponíveis.</p><div class="trending-title"><h3>🔥 Em alta e populares</h3><button type="button" class="btn secondary" onclick="refreshTrending()">↻ Atualizar</button></div><div class="trend-source-tabs"><button type="button" id="trendMoviesTab" onclick="switchTrending('movies')">Filmes em destaque</button><button type="button" id="trendShowsTab" onclick="switchTrending('shows')">Séries populares</button></div><p id="trendingSourceNote" class="notice">Ranking da loja Apple Brasil. Não é um ranking conjunto dos streamings.</p><div id="trendingRail" class="poster-rail"><p class="notice">Carregando...</p></div><div class="adoro-test"><button type="button" class="btn secondary" onclick="testAdoroCinema()">🧪 Testar AdoroCinema</button><small id="adoroTestResult">Teste de conexão direta, sem alterar a biblioteca.</small></div><h3>Coleções</h3><div class="suggestion-collections">${SUGGESTED_COLLECTIONS.map((c,i)=>`<button type="button" class="collection-choice" onclick="openCollectionPicker(${i})"><b>${c.emoji} ${esc(c.name)}</b><small>${c.titles.length} filmes</small></button>`).join('')}</div>`);switchTrending('movies')}
+function openSuggestions(){showModal('✨ Sugestões de coleções',`<p>Explore títulos com capas e gêneros, quando disponíveis.</p><div class="trending-title"><h3>🔥 Em alta e populares</h3><button type="button" class="btn secondary" onclick="refreshTrending()">↻ Atualizar</button></div><div class="trend-source-tabs"><button type="button" id="trendMoviesTab" onclick="switchTrending('movies')">Filmes em destaque</button><button type="button" id="trendShowsTab" onclick="switchTrending('shows')">Séries populares</button></div><p id="trendingSourceNote" class="notice">Ranking da loja Apple Brasil. Não é um ranking conjunto dos streamings.</p><div id="trendingRail" class="poster-rail"><p class="notice">Carregando...</p></div><div class="adoro-test"><button type="button" class="btn secondary" onclick="testAdoroCinema()">🧪 Testar AdoroCinema</button><small id="adoroTestResult">Teste de conexão direta, sem alterar a biblioteca.</small></div><div class="adoro-test" style="display:block"><button type="button" class="btn secondary" onclick="testIngresso()">🧪 Testar Ingresso.com</button><p class="notice">Verifica se o GitHub Pages consegue ler a API pelo JavaScript. Não adiciona nem modifica filmes.</p><div id="ingressoTestResult" class="notice" aria-live="polite">Teste ainda não realizado.</div></div><h3>Coleções</h3><div class="suggestion-collections">${SUGGESTED_COLLECTIONS.map((c,i)=>`<button type="button" class="collection-choice" onclick="openCollectionPicker(${i})"><b>${c.emoji} ${esc(c.name)}</b><small>${c.titles.length} filmes</small></button>`).join('')}</div>`);switchTrending('movies')}
 let trendingItems=[],trendingKind='movies',trendingRequest=0;
 async function testAdoroCinema(){
  const el=$('adoroTestResult');if(!el)return;
@@ -137,6 +137,27 @@ async function testAdoroCinema(){
  }catch(err){
   el.textContent='A leitura direta não funcionou neste navegador (possível bloqueio CORS/rede). Não é possível usar o AdoroCinema como API direta neste modo. Motivo: '+(err?.name==='AbortError'?'tempo esgotado':err.message);
  }
+}
+
+async function testIngresso(){
+ const el=$('ingressoTestResult');if(!el)return;
+ el.textContent='Consultando a API do Ingresso.com pelo JavaScript...';
+ const endpoint='https://api-content.ingresso.com/v0/templates/nowplaying/22?partnership=ingresso.com';
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
+ try{
+  const response=await fetch(endpoint,{mode:'cors',cache:'no-store',signal:controller.signal,headers:{'Accept':'application/json'}});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const payload=await response.json();
+  const films=Array.isArray(payload)?payload:(Array.isArray(payload.items)?payload.items:Array.isArray(payload.movies)?payload.movies:[]);
+  if(!films.length){el.textContent='Acesso permitido e JSON recebido, mas não foi encontrada uma lista de filmes no formato esperado.';return}
+  const sample=films.filter(f=>f&&typeof f.title==='string').slice(0,8);
+  const withPosters=films.filter(f=>Array.isArray(f.images)&&f.images.some(i=>typeof i.url==='string')).length;
+  el.innerHTML='<b style="color:#9cf0b4">✓ Leitura direta funcionando!</b><p>'+films.length+' registros recebidos; '+withPosters+' com links de imagens.</p><p>Exemplos retornados:</p><div style="display:grid;gap:9px">'+sample.map(f=>{
+   const poster=f.images?.find(i=>i.type==='PosterPortrait'&&/^https:\/\//.test(i.url))?.url||f.images?.find(i=>/^https:\/\//.test(i.url))?.url||'';
+   return '<div style="display:flex;align-items:center;gap:9px">'+(poster?'<img loading="lazy" alt="" style="width:42px;height:62px;object-fit:cover;border-radius:5px" src="'+esc(poster)+'">':'')+'<span><b>'+esc(f.title)+'</b> '+esc(String(f.releaseYear||''))+'<br><small>'+esc((f.genres||[]).join(', '))+'</small></span></div>';
+  }).join('')+'</div><p class="notice">Teste técnico aprovado. A cobertura do catálogo e as permissões de reutilização ainda precisam ser avaliadas.</p>';
+ }catch(err){el.textContent='Não foi possível ler a API a partir do aplicativo. Possível CORS, rede ou indisponibilidade do serviço. Detalhe: '+(err.name==='AbortError'?'tempo limite de 12 segundos':err.message)+'. Abrir JSON diretamente no navegador não garante acesso pelo PWA.'}
+ finally{clearTimeout(timer)}
 }
 
 function switchTrending(kind){trendingKind=kind;document.querySelectorAll('.trend-source-tabs button').forEach(b=>b.classList.toggle('active',b.id===(kind==='movies'?'trendMoviesTab':'trendShowsTab')));const note=$('trendingSourceNote');if(note)note.textContent=kind==='movies'?'Ranking da loja Apple no Brasil; não representa todos os streamings.':'Séries ordenadas por popularidade no TVmaze; não é um ranking atual por plataforma.';refreshTrending()}
