@@ -1,8 +1,5 @@
-CineLista v22 — Interface e listas
-Atualize os arquivos do repositório GitHub. Os dados salvos no navegador são preservados.
-Padrão: não assistidos e adicionados recentemente.
-Abas: não assistidos, próximos, assistidos, todos, histórico.
-Semana temática na grade principal, com dias e botões para reorganizar.
-Próximos: setas para reorganizar a lista.
-Sequência de dias assistindo e botão de voltar ao topo.
-O contador de sequência utiliza datas de conclusão registradas e pode não refletir dias anteriores que não tenham registros.
+CineLista v23 — listas personalizadas, avaliação de 5 estrelas, conquistas recolhíveis e aviso, QR para compartilhar aplicativo e apoio Pix R$ 2,00.
+
+Publique todos os arquivos na raiz do repositório GitHub. A chave OMDb configurada localmente permanece no navegador. Faça backup da biblioteca antes de atualizar.
+
+O QR de compartilhamento do app depende do endereço público continuar ativo e usa serviço externo de geração de imagem.
