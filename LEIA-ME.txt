@@ -1,1 +1,8 @@
-CineLista v21 - OMDb opcional via chave configurada no próprio aplicativo (botão Configurar OMDb na tela Adicionar). A chave é armazenada no localStorage deste dispositivo, NÃO no GitHub. Atenção: chamadas diretas do navegador expõem a chave nas requisições; não é possível mantê-la secreta apenas com GitHub Pages. OMDb priorizado em sugestões e enriquecimento de capas/gêneros, com fontes anteriores como fallback. Faça backup da biblioteca antes de atualizar.
+CineLista v22 — Interface e listas
+Atualize os arquivos do repositório GitHub. Os dados salvos no navegador são preservados.
+Padrão: não assistidos e adicionados recentemente.
+Abas: não assistidos, próximos, assistidos, todos, histórico.
+Semana temática na grade principal, com dias e botões para reorganizar.
+Próximos: setas para reorganizar a lista.
+Sequência de dias assistindo e botão de voltar ao topo.
+O contador de sequência utiliza datas de conclusão registradas e pode não refletir dias anteriores que não tenham registros.
