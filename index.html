@@ -120,7 +120,7 @@ const SUGGESTED_COLLECTIONS=[
  {name:'Velozes e Furiosos',emoji:'🏎️',titles:[['Velozes e Furiosos',2001],['+ Velozes + Furiosos',2003],['Velozes e Furiosos: Desafio em Tóquio',2006],['Velozes e Furiosos 4',2009],['Velozes e Furiosos 5: Operação Rio',2011],['Velozes e Furiosos 6',2013],['Velozes e Furiosos 7',2015],['Velozes e Furiosos 8',2017],['Velozes e Furiosos 9',2021],['Velozes e Furiosos 10',2023]]}
 ];
 let chosenCollection=0;
-function openSuggestions(){showModal('✨ Sugestões de coleções',`<p>Explore títulos com capas e gêneros, quando disponíveis.</p><div class="trending-title"><h3>🔥 Em alta e populares</h3><button type="button" class="btn secondary" onclick="refreshTrending()">↻ Atualizar</button></div><div class="trend-source-tabs"><button type="button" id="trendMoviesTab" onclick="switchTrending('movies')">Filmes em destaque</button><button type="button" id="trendShowsTab" onclick="switchTrending('shows')">Séries populares</button></div><p id="trendingSourceNote" class="notice">Ranking da loja Apple Brasil. Não é um ranking conjunto dos streamings.</p><div id="trendingRail" class="poster-rail"><p class="notice">Carregando...</p></div><div class="adoro-test"><button type="button" class="btn secondary" onclick="testAdoroCinema()">🧪 Testar AdoroCinema</button><small id="adoroTestResult">Teste de conexão direta, sem alterar a biblioteca.</small></div><div class="adoro-test" style="display:block"><button type="button" class="btn secondary" onclick="testIngresso()">🧪 Testar Ingresso.com</button><p class="notice">Verifica se o GitHub Pages consegue ler a API pelo JavaScript. Não adiciona nem modifica filmes.</p><div id="ingressoTestResult" class="notice" aria-live="polite">Teste ainda não realizado.</div></div><h3>Coleções</h3><div class="suggestion-collections">${SUGGESTED_COLLECTIONS.map((c,i)=>`<button type="button" class="collection-choice" onclick="openCollectionPicker(${i})"><b>${c.emoji} ${esc(c.name)}</b><small>${c.titles.length} filmes</small></button>`).join('')}</div>`);switchTrending('movies')}
+function openSuggestions(){showModal('✨ Sugestões de coleções',`<p>Explore títulos com capas e gêneros, quando disponíveis.</p><div class="trending-title"><h3>🔥 Em alta e populares</h3><button type="button" class="btn secondary" onclick="refreshTrending()">↻ Atualizar</button></div><div class="trend-source-tabs"><button type="button" id="trendMoviesTab" onclick="switchTrending('movies')">Filmes em destaque</button><button type="button" id="trendShowsTab" onclick="switchTrending('shows')">Séries populares</button></div><p id="trendingSourceNote" class="notice">Ranking da loja Apple Brasil. Não é um ranking conjunto dos streamings.</p><div id="trendingRail" class="poster-rail"><p class="notice">Carregando...</p></div><div class="adoro-test"><button type="button" class="btn secondary" onclick="testAdoroCinema()">🧪 Testar AdoroCinema</button><small id="adoroTestResult">Teste de conexão direta, sem alterar a biblioteca.</small></div><div class="adoro-test" style="display:block"><h3 style="width:100%;margin:0">🔎 Buscar no Ingresso.com (experimental)</h3><div style="display:flex;gap:8px;width:100%;flex-wrap:wrap"><input id="ingressoQuery" placeholder="Nome do filme em português" style="flex:1;min-width:150px;padding:12px;background:#25232a;color:white;border:1px solid #555;border-radius:9px"><button type="button" class="btn" onclick="searchIngresso()">Buscar filme</button></div><div id="ingressoSearchResult" style="width:100%" aria-live="polite"></div><button type="button" class="btn secondary" onclick="testIngresso()">🧪 Testar scraping Ingresso.com</button><p class="notice">Consulta o HTML de uma página pública por um Cloudflare Worker. Não adiciona nem modifica filmes. <button type="button" class="btn secondary" onclick="changeIngressoWorker()" style="margin-top:8px">Alterar endereço do Worker</button></p><div id="ingressoTestResult" class="notice" aria-live="polite">Teste ainda não realizado.</div></div><h3>Coleções</h3><div class="suggestion-collections">${SUGGESTED_COLLECTIONS.map((c,i)=>`<button type="button" class="collection-choice" onclick="openCollectionPicker(${i})"><b>${c.emoji} ${esc(c.name)}</b><small>${c.titles.length} filmes</small></button>`).join('')}</div>`);switchTrending('movies')}
 let trendingItems=[],trendingKind='movies',trendingRequest=0;
 async function testAdoroCinema(){
  const el=$('adoroTestResult');if(!el)return;
@@ -141,24 +141,38 @@ async function testAdoroCinema(){
 
 async function testIngresso(){
  const el=$('ingressoTestResult');if(!el)return;
- el.textContent='Consultando a API do Ingresso.com pelo JavaScript...';
- const endpoint='https://api-content.ingresso.com/v0/templates/nowplaying/22?partnership=ingresso.com';
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
+ let base=localStorage.getItem('cinelistaWorkerScraping')||'';
+ if(!base){base=prompt('Cole o endereço HTTPS do seu Cloudflare Worker (ex.: https://cinelista-scraping.seuusuario.workers.dev):','')||'';}
+ base=base.trim().replace(/\/+$/,'');
+ if(!/^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(base)){el.textContent='Informe um endereço válido HTTPS terminado em .workers.dev. Nenhuma alteração foi feita.';return;}
+ localStorage.setItem('cinelistaWorkerScraping',base);
+ el.textContent='Buscando o HTML público da página do filme pelo Cloudflare Worker...';
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);
  try{
-  const response=await fetch(endpoint,{mode:'cors',cache:'no-store',signal:controller.signal,headers:{'Accept':'application/json'}});
-  if(!response.ok)throw Error('HTTP '+response.status);
-  const payload=await response.json();
-  const films=Array.isArray(payload)?payload:(Array.isArray(payload.items)?payload.items:Array.isArray(payload.movies)?payload.movies:[]);
-  if(!films.length){el.textContent='Acesso permitido e JSON recebido, mas não foi encontrada uma lista de filmes no formato esperado.';return}
-  const sample=films.filter(f=>f&&typeof f.title==='string').slice(0,8);
-  const withPosters=films.filter(f=>Array.isArray(f.images)&&f.images.some(i=>typeof i.url==='string')).length;
-  el.innerHTML='<b style="color:#9cf0b4">✓ Leitura direta funcionando!</b><p>'+films.length+' registros recebidos; '+withPosters+' com links de imagens.</p><p>Exemplos retornados:</p><div style="display:grid;gap:9px">'+sample.map(f=>{
-   const poster=f.images?.find(i=>i.type==='PosterPortrait'&&/^https:\/\//.test(i.url))?.url||f.images?.find(i=>/^https:\/\//.test(i.url))?.url||'';
-   return '<div style="display:flex;align-items:center;gap:9px">'+(poster?'<img loading="lazy" alt="" style="width:42px;height:62px;object-fit:cover;border-radius:5px" src="'+esc(poster)+'">':'')+'<span><b>'+esc(f.title)+'</b> '+esc(String(f.releaseYear||''))+'<br><small>'+esc((f.genres||[]).join(', '))+'</small></span></div>';
-  }).join('')+'</div><p class="notice">Teste técnico aprovado. A cobertura do catálogo e as permissões de reutilização ainda precisam ser avaliadas.</p>';
- }catch(err){el.textContent='Não foi possível ler a API a partir do aplicativo. Possível CORS, rede ou indisponibilidade do serviço. Detalhe: '+(err.name==='AbortError'?'tempo limite de 12 segundos':err.message)+'. Abrir JSON diretamente no navegador não garante acesso pelo PWA.'}
+  const response=await fetch(base+'/scrape?slug=o-exorcista-1973',{signal:controller.signal,cache:'no-store'});
+  const data=await response.json();
+  if(!response.ok||!data.ok)throw Error(data.error||'HTTP '+response.status);
+  const f=data.fields||{};
+  el.innerHTML='<b style="color:#9cf0b4">✓ Scraping HTML executado</b><p>Fonte: página pública do filme O Exorcista (1973).</p>'+
+   (f.poster&&/^https:\/\//.test(f.poster)?'<img src="'+esc(f.poster)+'" alt="Capa encontrada" style="width:90px;border-radius:8px;max-height:145px;object-fit:cover">':'<p>Sem capa detectada.</p>')+
+   '<p><b>Título:</b> '+esc(f.title||'Não encontrado')+'</p><p><b>Sinopse:</b> '+esc((f.description||'Não encontrada').slice(0,400))+'</p><p><b>Ano:</b> '+esc(f.year||'Não encontrado')+'</p><p><b>Gêneros:</b> '+esc(Array.isArray(f.genres)?f.genres.join(', '):String(f.genres||'Não encontrados'))+'</p>'+
+   '<p class="notice">Teste sem modificar a biblioteca. Dados ausentes exigem aprimoramento do extrator.</p>';
+ }catch(e){el.textContent='Falha no teste de scraping: '+(e.name==='AbortError'?'tempo esgotado':e.message)+'. O site pode bloquear solicitações automatizadas ou não fornecer metadados suficientes.';}
  finally{clearTimeout(timer)}
 }
+async function searchIngresso(){
+ const el=$('ingressoSearchResult'),q=$('ingressoQuery')?.value.trim();if(!q){el.textContent='Digite um título.';return;}
+ const base='https://cinelista-scraping.tdg-lifestartnow.workers.dev';
+ el.textContent='Pesquisando páginas públicas por possíveis endereços...';
+ try{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
+  let r;try{r=await fetch(base+'/search?q='+encodeURIComponent(q),{signal:controller.signal,cache:'no-store'});}finally{clearTimeout(timer)}
+  const result=await r.json();if(!r.ok)throw Error(result.error||'HTTP '+r.status);
+  if(!result.results?.length){el.innerHTML='<p class="notice">Nenhuma página correspondente encontrada. A busca é experimental e não indexa todo o catálogo.</p>';return;}
+  el.innerHTML=result.results.map((m,i)=>'<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #444">'+(m.poster?'<img src="'+esc(m.poster)+'" style="width:72px;max-height:110px;object-fit:cover;border-radius:7px">':'')+'<div><b>'+esc(m.title)+'</b><p class="notice">'+esc([m.year,(m.genres||[]).join(', ')].filter(Boolean).join(' • '))+'</p><a href="'+esc(m.source)+'" target="_blank" rel="noopener noreferrer">Ver fonte</a></div></div>').join('')+'<p class="notice">Resultados de páginas identificadas; confira o filme e os direitos de uso das imagens. Esta busca não modifica a biblioteca.</p>';
+ }catch(e){el.textContent='Falha na busca: '+(e.name==='AbortError'?'tempo esgotado':e.message)+'. Verifique se atualizou o código do Worker.';}
+}
+function changeIngressoWorker(){localStorage.removeItem('cinelistaWorkerScraping');testIngresso()}
 
 function switchTrending(kind){trendingKind=kind;document.querySelectorAll('.trend-source-tabs button').forEach(b=>b.classList.toggle('active',b.id===(kind==='movies'?'trendMoviesTab':'trendShowsTab')));const note=$('trendingSourceNote');if(note)note.textContent=kind==='movies'?'Ranking da loja Apple no Brasil; não representa todos os streamings.':'Séries ordenadas por popularidade no TVmaze; não é um ranking atual por plataforma.';refreshTrending()}
 async function refreshTrending(){const rail=$('trendingRail');if(!rail)return;const request=++trendingRequest,kind=trendingKind;rail.innerHTML='<p class="notice">Atualizando títulos...</p>';try{let movies=[];if(kind==='movies'){const r=await fetch('https://itunes.apple.com/br/rss/topmovies/limit=25/json?refresh='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Indisponível');const j=await r.json();movies=(j.feed?.entry||[]).map(e=>({name:e['im:name']?.label||'',poster:(e['im:image']||[]).slice(-1)[0]?.label||'',year:(e['im:releaseDate']?.label||'').slice(0,4),genres:(e.category?.attributes?.label||'').split(',').filter(Boolean),type:'Filme'})).filter(m=>m.name&&m.poster).slice(0,18)}else{
