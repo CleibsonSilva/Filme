@@ -1,15 +1,1 @@
-CineLista v25 — Atualização de interface e Semana Temática
-
-Atualize os arquivos do repositório GitHub, mantendo o mesmo domínio do PWA.
-Faça backup da biblioteca antes da atualização.
-A chave de armazenamento da biblioteca permanece cinelista_v1.
-
-Melhorias:
-- Atualizar destaques manualmente; duas fontes identificadas: Apple Brasil (filmes) e TVmaze (séries populares).
-- Corrigido botão de voltar ao topo com rolagem suave.
-- Semana temática: opção de incluir somente títulos não assistidos, ou também os assistidos.
-- Ações de refazer ou excluir a Semana Temática junto de Ocultar assistidos.
-
-Importante: Apple e TVmaze não fornecem um ranking combinado e atual de Netflix, Prime Video, Disney+ e Max. Não rotulamos essas listas como se fossem rankings dessas plataformas.
-
-Versao 26: colecao Marvel com 34 filmes em ordem cronologica da historia (anos de lancamento usados para busca de capas); oferta de criar lista personalizada apos adicionar colecao; atualizacao dos destaques com nova consulta e horario visivel. Mantem armazenamento cinelista_v1. Faça backup antes de publicar.
+CineLista v27 - teste AdoroCinema, busca alternativa por título original via Wikipédia/Wikidata, séries populares TVmaze consultando várias páginas. Os dados da biblioteca localStorage cinelista_v1 são preservados. Faça backup antes da atualização. O teste AdoroCinema verifica apenas se o navegador consegue ler uma página; não realiza extração automática.\n
