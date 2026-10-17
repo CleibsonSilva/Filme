@@ -120,47 +120,8 @@ const SUGGESTED_COLLECTIONS=[
  {name:'Velozes e Furiosos',emoji:'🏎️',titles:[['Velozes e Furiosos',2001],['+ Velozes + Furiosos',2003],['Velozes e Furiosos: Desafio em Tóquio',2006],['Velozes e Furiosos 4',2009],['Velozes e Furiosos 5: Operação Rio',2011],['Velozes e Furiosos 6',2013],['Velozes e Furiosos 7',2015],['Velozes e Furiosos 8',2017],['Velozes e Furiosos 9',2021],['Velozes e Furiosos 10',2023]]}
 ];
 let chosenCollection=0;
-function openSuggestions(){showModal('✨ Sugestões de coleções',`<p>Explore títulos com capas e gêneros, quando disponíveis.</p><div class="trending-title"><h3>🔥 Em alta e populares</h3><button type="button" class="btn secondary" onclick="refreshTrending()">↻ Atualizar</button></div><div class="trend-source-tabs"><button type="button" id="trendMoviesTab" onclick="switchTrending('movies')">Filmes em destaque</button><button type="button" id="trendShowsTab" onclick="switchTrending('shows')">Séries populares</button></div><p id="trendingSourceNote" class="notice">Ranking da loja Apple Brasil. Não é um ranking conjunto dos streamings.</p><div id="trendingRail" class="poster-rail"><p class="notice">Carregando...</p></div><div class="adoro-test"><button type="button" class="btn secondary" onclick="testAdoroCinema()">🧪 Testar AdoroCinema</button><small id="adoroTestResult">Teste de conexão direta, sem alterar a biblioteca.</small></div><div class="adoro-test" style="display:block"><h3 style="width:100%;margin:0">🔎 Buscar no Ingresso.com (fonte alternativa)</h3><div style="display:flex;gap:8px;width:100%;flex-wrap:wrap"><input id="ingressoQuery" placeholder="Nome do filme em português" style="flex:1;min-width:150px;padding:12px;background:#25232a;color:white;border:1px solid #555;border-radius:9px"><button type="button" class="btn" onclick="searchIngresso()">Buscar filme</button></div><div id="ingressoSearchResult" style="width:100%" aria-live="polite"></div><button type="button" class="btn secondary" onclick="testIngresso()">🧪 Testar scraping Ingresso.com</button><p class="notice">Consulta o HTML de uma página pública por um Cloudflare Worker. Não adiciona nem modifica filmes. <button type="button" class="btn secondary" onclick="changeIngressoWorker()" style="margin-top:8px">Alterar endereço do Worker</button></p><div id="ingressoTestResult" class="notice" aria-live="polite">Teste ainda não realizado.</div></div><h3>Coleções</h3><div class="suggestion-collections">${SUGGESTED_COLLECTIONS.map((c,i)=>`<button type="button" class="collection-choice" onclick="openCollectionPicker(${i})"><b>${c.emoji} ${esc(c.name)}</b><small>${c.titles.length} filmes</small></button>`).join('')}</div>`);switchTrending('movies')}
+function openSuggestions(){showModal('✨ Sugestões de coleções',`<p>Explore títulos com capas e gêneros, quando disponíveis.</p><div class="trending-title"><h3>🔥 Em alta e populares</h3><button type="button" class="btn secondary" onclick="refreshTrending()">↻ Atualizar</button></div><div class="trend-source-tabs"><button type="button" id="trendMoviesTab" onclick="switchTrending('movies')">Filmes em destaque</button><button type="button" id="trendShowsTab" onclick="switchTrending('shows')">Séries populares</button></div><p id="trendingSourceNote" class="notice">Ranking da loja Apple Brasil. Não é um ranking conjunto dos streamings.</p><div id="trendingRail" class="poster-rail"><p class="notice">Carregando...</p></div><div class="adoro-test" style="display:block"><h3 style="width:100%;margin:0">🔎 Buscar no Ingresso.com</h3><div style="display:flex;gap:8px;width:100%;flex-wrap:wrap"><input id="ingressoQuery" placeholder="Nome do filme em português" style="flex:1;min-width:150px;padding:12px;background:#25232a;color:white;border:1px solid #555;border-radius:9px"><button type="button" class="btn" onclick="searchIngresso()">Buscar filme</button></div><div id="ingressoSearchResult" style="width:100%" aria-live="polite"></div><p class="notice">Busca de filmes em português pela fonte principal. Os resultados podem ser conferidos antes de adicionar.</p></div><h3>Coleções</h3><div class="suggestion-collections">${SUGGESTED_COLLECTIONS.map((c,i)=>`<button type="button" class="collection-choice" onclick="openCollectionPicker(${i})"><b>${c.emoji} ${esc(c.name)}</b><small>${c.titles.length} filmes</small></button>`).join('')}</div>`);switchTrending('movies')}
 let trendingItems=[],trendingKind='movies',trendingRequest=0;
-async function testAdoroCinema(){
- const el=$('adoroTestResult');if(!el)return;
- el.textContent='Testando acesso direto ao AdoroCinema...';
- try{
-  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),8500);
-  try{
-   const r=await fetch('https://www.adorocinema.com/filmes/filme-1628/',{mode:'cors',signal:controller.signal,cache:'no-store'});
-   if(!r.ok)throw Error('HTTP '+r.status);
-   const html=await r.text();
-   const title=html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]||'página recebida';
-   el.textContent='Acesso de leitura permitido neste navegador: '+title.slice(0,110)+'. Integração automática ainda exige validação de permissões e estabilidade.';
-  }finally{clearTimeout(timeout)}
- }catch(err){
-  el.textContent='A leitura direta não funcionou neste navegador (possível bloqueio CORS/rede). Não é possível usar o AdoroCinema como API direta neste modo. Motivo: '+(err?.name==='AbortError'?'tempo esgotado':err.message);
- }
-}
-
-async function testIngresso(){
- const el=$('ingressoTestResult');if(!el)return;
- let base=localStorage.getItem('cinelistaWorkerScraping')||'';
- if(!base){base=prompt('Cole o endereço HTTPS do seu Cloudflare Worker (ex.: https://cinelista-scraping.seuusuario.workers.dev):','')||'';}
- base=base.trim().replace(/\/+$/,'');
- if(!/^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(base)){el.textContent='Informe um endereço válido HTTPS terminado em .workers.dev. Nenhuma alteração foi feita.';return;}
- localStorage.setItem('cinelistaWorkerScraping',base);
- el.textContent='Buscando o HTML público da página do filme pelo Cloudflare Worker...';
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);
- try{
-  const response=await fetch(base+'/scrape?slug=o-exorcista-1973',{signal:controller.signal,cache:'no-store'});
-  const data=await response.json();
-  if(!response.ok||!data.ok)throw Error(data.error||'HTTP '+response.status);
-  const f=data.fields||{};
-  el.innerHTML='<b style="color:#9cf0b4">✓ Scraping HTML executado</b><p>Fonte: página pública do filme O Exorcista (1973).</p>'+
-   (f.poster&&/^https:\/\//.test(f.poster)?'<img src="'+esc(f.poster)+'" alt="Capa encontrada" style="width:90px;border-radius:8px;max-height:145px;object-fit:cover">':'<p>Sem capa detectada.</p>')+
-   '<p><b>Título:</b> '+esc(f.title||'Não encontrado')+'</p><p><b>Sinopse:</b> '+esc((f.description||'Não encontrada').slice(0,400))+'</p><p><b>Ano:</b> '+esc(f.year||'Não encontrado')+'</p><p><b>Gêneros:</b> '+esc(Array.isArray(f.genres)?f.genres.join(', '):String(f.genres||'Não encontrados'))+'</p>'+
-   '<p class="notice">Teste sem modificar a biblioteca. Dados ausentes exigem aprimoramento do extrator.</p>';
- }catch(e){el.textContent='Falha no teste de scraping: '+(e.name==='AbortError'?'tempo esgotado':e.message)+'. O site pode bloquear solicitações automatizadas ou não fornecer metadados suficientes.';}
- finally{clearTimeout(timer)}
-}
-// Fonte alternativa: usa o Worker existente apenas para filmes. Falhas nunca bloqueiam as outras fontes.
 const INGRESSO_DEFAULT_WORKER='https://cinelista-scraping.tdg-lifestartnow.workers.dev';
 function ingressoWorkerBase(){return (localStorage.getItem('cinelistaWorkerScraping')||INGRESSO_DEFAULT_WORKER).replace(/\/+$/,'')}
 async function ingressoTitleSearch(title,year=''){
@@ -198,7 +159,6 @@ async function searchIngresso(){
   el.innerHTML=result.results.map((m,i)=>'<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #444">'+(m.poster?'<img src="'+esc(m.poster)+'" style="width:72px;max-height:110px;object-fit:cover;border-radius:7px">':'')+'<div><b>'+esc(m.title)+'</b><p class="notice">'+esc([m.year,(m.genres||[]).join(', ')].filter(Boolean).join(' • '))+'</p><a href="'+esc(m.source)+'" target="_blank" rel="noopener noreferrer">Ver fonte</a></div></div>').join('')+'<p class="notice">Resultados de páginas identificadas; confira o filme e os direitos de uso das imagens. Esta busca não modifica a biblioteca.</p>';
  }catch(e){el.textContent='Falha na busca: '+(e.name==='AbortError'?'tempo esgotado':e.message)+'. Verifique se atualizou o código do Worker.';}
 }
-function changeIngressoWorker(){localStorage.removeItem('cinelistaWorkerScraping');testIngresso()}
 
 function switchTrending(kind){trendingKind=kind;document.querySelectorAll('.trend-source-tabs button').forEach(b=>b.classList.toggle('active',b.id===(kind==='movies'?'trendMoviesTab':'trendShowsTab')));const note=$('trendingSourceNote');if(note)note.textContent=kind==='movies'?'Ranking da loja Apple no Brasil; não representa todos os streamings.':'Séries ordenadas por popularidade no TVmaze; não é um ranking atual por plataforma.';refreshTrending()}
 async function refreshTrending(){const rail=$('trendingRail');if(!rail)return;const request=++trendingRequest,kind=trendingKind;rail.innerHTML='<p class="notice">Atualizando títulos...</p>';try{let movies=[];if(kind==='movies'){const r=await fetch('https://itunes.apple.com/br/rss/topmovies/limit=25/json?refresh='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Indisponível');const j=await r.json();movies=(j.feed?.entry||[]).map(e=>({name:e['im:name']?.label||'',poster:(e['im:image']||[]).slice(-1)[0]?.label||'',year:(e['im:releaseDate']?.label||'').slice(0,4),genres:(e.category?.attributes?.label||'').split(',').filter(Boolean),type:'Filme'})).filter(m=>m.name&&m.poster).slice(0,18)}else{
@@ -302,15 +262,15 @@ async function lookupMetadata(){
  if(!title)return toast('Digite o título.');
  const label=document.getElementById('lookupStatus');if(label)label.textContent='Buscando títulos...';
  const sources=[];
+ if(type==='Filme')sources.push(ingressoTitleSearch(title));
  sources.push(omdbTitleSearch(title,type));
  if(type==='Série')sources.push(fetch('https://api.tvmaze.com/search/shows?q='+encodeURIComponent(title)).then(r=>r.json()).then(j=>j.slice(0,20).filter(x=>x.show&&x.show.type!=='News'&&x.show.type!=='Talk Show').map(x=>({name:x.show.name,year:(x.show.premiered||'').slice(0,4),genres:metadataGenres(x.show.genres),poster:x.show.image?.original||x.show.image?.medium||'',type,source:'TVmaze'}))));
  else sources.push(fetch('https://itunes.apple.com/search?'+new URLSearchParams({term:title,media:'movie',entity:'movie',country:'br',limit:'50'})).then(r=>r.json()).then(j=>(j.results||[]).filter(x=>x.kind==='feature-movie'||x.wrapperType==='track'&&x.trackKind==='feature-movie').map(x=>({name:x.trackName||x.collectionName,year:(x.releaseDate||'').slice(0,4),genres:metadataGenres([x.primaryGenreName]),poster:(x.artworkUrl100||'').replace(/100x100(?:bb)?/,'600x900bb'),type,source:'Apple Filmes'}))));
- if(type==='Filme')sources.push(ingressoTitleSearch(title));
  sources.push(wikidataTitleSearch(title,type));
  sources.push(wikipediaTitleSearch(title,type));
- const settled=await Promise.allSettled(sources);if(document.getElementById('movieName')?.value.trim()!==title||document.getElementById('movieType')?.value!==type)return;const primary=settled[0].status==='fulfilled'?settled[0].value:[];const secondary=settled.slice(1).flatMap(x=>x.status==='fulfilled'?x.value:[]);const results=primary.concat(secondary);
+ const settled=await Promise.allSettled(sources);if(document.getElementById('movieName')?.value.trim()!==title||document.getElementById('movieType')?.value!==type)return;const results=settled.flatMap(x=>x.status==='fulfilled'?x.value:[]);
  const seen=new Map(),needle=normalizeMovieTitle(title);
- const candidates=results.filter(x=>{const n=normalizeMovieTitle(x.name),key=n+'-'+x.year;if(!n||(!n.includes(needle)&&!needle.includes(n)&&posterScore(n,needle,'','')<35))return false;const previous=seen.get(key);if(previous){if(!previous.poster&&x.poster)previous.poster=x.poster;if(!previous.genres?.length&&x.genres?.length)previous.genres=x.genres;return false}seen.set(key,x);return true}).sort((a,b)=>Number(normalizeMovieTitle(b.name)===needle)-Number(normalizeMovieTitle(a.name)===needle)||Number(!!b.poster)-Number(!!a.poster)||Number(b.genres.length>0)-Number(a.genres.length>0)).slice(0,12);
+ const candidates=results.filter(x=>{const n=normalizeMovieTitle(x.name),key=n+'-'+x.year;if(!n||(!n.includes(needle)&&!needle.includes(n)&&posterScore(n,needle,'','')<35))return false;const previous=seen.get(key);if(previous){if(!previous.poster&&x.poster)previous.poster=x.poster;if(!previous.genres?.length&&x.genres?.length)previous.genres=x.genres;return false}seen.set(key,x);return true}).sort((a,b)=>Number(b.source==='Ingresso.com')-Number(a.source==='Ingresso.com')||Number(normalizeMovieTitle(b.name)===needle)-Number(normalizeMovieTitle(a.name)===needle)||Number(!!b.poster)-Number(!!a.poster)||Number(b.genres.length>0)-Number(a.genres.length>0)).slice(0,12);
  if(!candidates.length){if(label)label.textContent='Nenhum resultado encontrado. Tente o título original ou outra grafia.';const box=document.getElementById('titleSuggestions');if(box)box.innerHTML='';return}
  window.metadataChoices=candidates;
  const box=document.getElementById('titleSuggestions');
@@ -468,32 +428,31 @@ async function enrichMovie(m,{replacePoster=false,force=false}={}){
  const wantsPoster=replacePoster||!m.poster;
  const wantsGenres=!(m.genres||[]).length||force;
  if(!wantsPoster&&!wantsGenres)return false;
- let [omdb,apple,wiki]=await Promise.all([omdbMovieMetadata(m,excluded),m.type==='Filme'?appleMovieMetadata(m,excluded):tvmazeMetadata(m,excluded),m.type==='Filme'?wikipediaMovieMetadata(m):Promise.resolve(null)]);
- if(!omdb?.poster&&!apple?.poster){
-  const alias=await resolveOriginalTitle(m);
-  if(alias){
-   const alternate={...m,name:alias.name};
-   const [otherOmdb,otherSecondary]=await Promise.all([omdbMovieMetadata(alternate,excluded),m.type==='Filme'?appleMovieMetadata(alternate,excluded):tvmazeMetadata(alternate,excluded)]);
-   if(otherOmdb?.poster||otherOmdb?.genres?.length)omdb=otherOmdb;
-   if(otherSecondary?.poster||otherSecondary?.genres?.length)apple=otherSecondary;
+ let poster='',genres=[];
+ // Para filmes, o scraping do Ingresso.com tem prioridade. Falhas não impedem as demais fontes.
+ const ingresso=m.type==='Filme'?await ingressoMovieMetadata(m,excluded):null;
+ if(ingresso){
+  if(wantsPoster&&ingresso.poster&&!excluded.has(ingresso.poster)&&await imageLoads(ingresso.poster))poster=ingresso.poster;
+  genres=safeGenres(ingresso.genres||[]);
+ }
+ if((wantsPoster&&!poster)||(wantsGenres&&!genres.length)){
+  let [omdb,apple,wiki]=await Promise.all([omdbMovieMetadata(m,excluded),m.type==='Filme'?appleMovieMetadata(m,excluded):tvmazeMetadata(m,excluded),m.type==='Filme'?wikipediaMovieMetadata(m):Promise.resolve(null)]);
+  if(!omdb?.poster&&!apple?.poster){
+   const alias=await resolveOriginalTitle(m);
+   if(alias){
+    const alternate={...m,name:alias.name};
+    const [otherOmdb,otherSecondary]=await Promise.all([omdbMovieMetadata(alternate,excluded),m.type==='Filme'?appleMovieMetadata(alternate,excluded):tvmazeMetadata(alternate,excluded)]);
+    if(otherOmdb?.poster||otherOmdb?.genres?.length)omdb=otherOmdb;
+    if(otherSecondary?.poster||otherSecondary?.genres?.length)apple=otherSecondary;
+   }
   }
- }
- let poster='';
- if(wantsPoster){
-  const options=[omdb?.poster,apple?.poster,wiki?.poster].filter(x=>x&&!excluded.has(x));
-  for(const candidate of options){if(await imageLoads(candidate)){poster=candidate;break}}
-  if(!poster){
-   const backup=await (m.type==='Série'?Promise.resolve(null):commonsPoster(m));
-   if(backup&&!excluded.has(backup)&&await imageLoads(backup))poster=backup;
+  if(wantsPoster&&!poster){
+   const options=[omdb?.poster,apple?.poster,wiki?.poster].filter(x=>x&&!excluded.has(x));
+   for(const candidate of options){if(await imageLoads(candidate)){poster=candidate;break}}
+   if(!poster){const backup=await (m.type==='Série'?Promise.resolve(null):commonsPoster(m));if(backup&&!excluded.has(backup)&&await imageLoads(backup))poster=backup}
   }
+  if(wantsGenres&&!genres.length)genres=safeGenres([...(omdb?.genres||[]),...(apple?.genres||[]),...(wiki?.genres||[])]);
  }
- // Consultar Ingresso.com somente quando as fontes anteriores não completaram a ficha.
- let ingresso=null;
- if(m.type==='Filme'&&((wantsPoster&&!poster)||wantsGenres)){
-  ingresso=await ingressoMovieMetadata(m,excluded);
-  if(wantsPoster&&!poster&&ingresso?.poster&&await imageLoads(ingresso.poster))poster=ingresso.poster;
- }
- const genres=safeGenres([...(omdb?.genres||[]),...(apple?.genres||[]),...(wiki?.genres||[]),...(ingresso?.genres||[])]);
  let changed=false;
  if(poster&&poster!==m.poster){m.poster=poster;changed=true}
  if(wantsGenres&&genres.length){m.genres=genres;changed=true}
