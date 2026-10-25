@@ -1,1 +1,1 @@
-CineLista v35: pesquisa separada do Ingresso removida de Sugestões. Testes: pesquisa única IMDb, AdoroCinema e Ingresso.com. Atualizar Worker v35 no Cloudflare. Backup recomendado. Armazenamento da biblioteca preservado.
+CineLista v36: Laboratório de scraping com busca em duas etapas (resultados -> ficha) e diagnósticos para IMDb, AdoroCinema e Ingresso.com. Substitua o Worker pelo cinelista_worker_v36.js no Cloudflare. A biblioteca local é preservada. Faça backup antes de publicar. Testes reais de rede dependem das permissões dos sites.
